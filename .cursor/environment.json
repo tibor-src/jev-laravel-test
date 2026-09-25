@@ -4,5 +4,6 @@
         "dockerfile": "Dockerfile"
     },
     "user": "ubuntu",
-    "install": "composer install --no-interaction --prefer-dist\n[ -f .env ] || cp .env.example .env\ngrep -qE '^APP_KEY=.+' .env || php artisan key:generate --force\ntouch database/database.sqlite\nphp artisan migrate --force\nnpm install --ignore-scripts\nnpm run build"
+    "install": "composer install --no-interaction --prefer-dist\n[ -f .env ] || cp .env.example .env\ngrep -qE '^APP_KEY=.+' .env || php artisan key:generate --force\ntouch database/database.sqlite\nphp artisan migrate --force\nnpm install --ignore-scripts\nnpm run build",
+    "start": "composer install --no-interaction --prefer-dist\nphp artisan migrate --force"
 }
