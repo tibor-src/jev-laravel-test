@@ -1,0 +1,8 @@
+{
+    "name": "Jev Laravel test app",
+    "build": {
+        "dockerfile": "Dockerfile"
+    },
+    "user": "ubuntu",
+    "install": "composer install --no-interaction --prefer-dist\n[ -f .env ] || cp .env.example .env\ngrep -qE '^APP_KEY=.+' .env || php artisan key:generate --force\ntouch database/database.sqlite\nphp artisan migrate --force\nnpm install --ignore-scripts\nnpm run build"
+}
