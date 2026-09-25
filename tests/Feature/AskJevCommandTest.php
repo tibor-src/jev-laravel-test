@@ -3,22 +3,12 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Http;
+use Laravel\Ai\Classification;
+use Laravel\Ai\Responses\Data\BooleanAnswer;
 use Tests\TestCase;
 
 class AskJevCommandTest extends TestCase
 {
-    /**
-     * Whether a usable OpenRouter API key is configured for this run.
-     *
-     * The suite adapts to this value: key-less assertions run only when no key
-     * is present, and the live classification test runs only when one is. This
-     * keeps `php artisan test` green whether or not OPENROUTER_API_KEY is set.
-     */
-    private function hasOpenRouterKey(): bool
-    {
-        return filled(config('ai.providers.openrouter.key'));
-    }
-
     public function test_classification_defaults_to_the_openrouter_provider(): void
     {
         $this->assertSame('openrouter', config('ai.default_for_classification'));
@@ -38,23 +28,23 @@ class AskJevCommandTest extends TestCase
         Http::assertNothingSent();
     }
 
-    public function test_no_openrouter_key_is_configured_by_default(): void
+    public function test_jev_ask_reports_the_probability_from_the_classifier(): void
     {
-        if ($this->hasOpenRouterKey()) {
-            $this->markTestSkipped('OPENROUTER_API_KEY is set; the key-less default does not apply.');
-        }
+        // A configured key is required to reach the classifier; the classification
+        // itself is faked so the test never performs a real OpenRouter request and
+        // stays deterministic regardless of whether OPENROUTER_API_KEY is set.
+        config()->set('ai.providers.openrouter.key', 'test-key');
 
-        $this->assertSame('', config('ai.providers.openrouter.key'));
-    }
-
-    public function test_jev_ask_returns_a_probability_with_a_real_key(): void
-    {
-        if (! $this->hasOpenRouterKey()) {
-            $this->markTestSkipped('OPENROUTER_API_KEY is not set; skipping the live OpenRouter classification.');
-        }
+        Classification::fake([
+            ['is_question' => new BooleanAnswer(0.97)],
+        ]);
 
         $this->artisan('jev:ask', ['text' => 'Is the deploy finished?'])
-            ->expectsOutputToContain('Probability this is a question:')
+            ->expectsOutputToContain('Probability this is a question: 0.97')
             ->assertSuccessful();
+
+        Classification::assertClassified(
+            fn ($prompt) => $prompt->contains('Is the deploy finished?') && $prompt->asks('is_question')
+        );
     }
 }
